@@ -3,23 +3,62 @@
 #include <random>
 #include <ctime>
 #include <vector>
+#include <chrono>
 
 class PrimeGenerator {
 public:
-    // 预定义的安全素数对（用于快速初始化）
+    // 根据安全等级生成随机素数对
     static std::pair<BigInt, BigInt> getSafePrimePair(int level = 1) {
+        long long min_p, max_p, min_q, max_q;
+        
         switch (level) {
-            case 1: // 小型（适合快速测试）
-                return {BigInt("1009"), BigInt("1013")};
-            case 2: // 中型
-                return {BigInt("10007"), BigInt("10009")};
-            case 3: // 大型
-                return {BigInt("100003"), BigInt("100019")};
-            case 4: // 超大型
-                return {BigInt("1000003"), BigInt("1000033")};
+            case 0: // 演示级（小素数）
+                min_p = 50;
+                max_p = 100;
+                min_q = 50;
+                max_q = 100;
+                break;
+            case 1: // 低级（约1000左右）
+                min_p = 900;
+                max_p = 1100;
+                min_q = 900;
+                max_q = 1100;
+                break;
+            case 2: // 中级（约10000左右）
+                min_p = 9000;
+                max_p = 11000;
+                min_q = 9000;
+                max_q = 11000;
+                break;
+            case 3: // 高级（约100000左右）
+                min_p = 90000;
+                max_p = 110000;
+                min_q = 90000;
+                max_q = 110000;
+                break;
+            case 4: // 极高级（约1000000左右）
+                min_p = 900000;
+                max_p = 1100000;
+                min_q = 900000;
+                max_q = 1100000;
+                break;
             default:
-                return {BigInt("61"), BigInt("53")};
+                min_p = 50;
+                max_p = 100;
+                min_q = 50;
+                max_q = 100;
+                break;
         }
+        
+        BigInt p = generatePrime(min_p, max_p);
+        BigInt q = generatePrime(min_q, max_q);
+        
+        // 确保 p 和 q 不相等
+        while (p == q) {
+            q = generatePrime(min_q, max_q);
+        }
+        
+        return {p, q};
     }
 
     // 米勒-拉宾素性测试
@@ -35,8 +74,10 @@ public:
             r++;
         }
 
-        // 进行多次测试
-        std::mt19937_64 gen(static_cast<unsigned>(std::time(nullptr)));
+        // 进行多轮测试
+        std::random_device rd;
+        auto seed = rd() ^ static_cast<unsigned>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+        std::mt19937_64 gen(seed);
         
         for (int i = 0; i < iterations; i++) {
             // 生成随机数 a ∈ [2, n-2]
@@ -63,7 +104,13 @@ public:
 
     // 生成随机的素数（范围内）
     static BigInt generatePrime(long long min, long long max) {
-        std::mt19937_64 gen(static_cast<unsigned>(std::time(nullptr)));
+        // 使用更好的随机种子：结合时间和随机设备
+        std::random_device rd;
+        auto seed = rd() ^ (
+            static_cast<unsigned>(std::chrono::high_resolution_clock::now().time_since_epoch().count()) +
+            static_cast<unsigned>(std::time(nullptr))
+        );
+        std::mt19937_64 gen(seed);
         std::uniform_int_distribution<long long> dis(min, max);
 
         int attempts = 0;
@@ -78,7 +125,7 @@ public:
             attempts++;
         }
         
-        // 如果找不到，返回预定义的素数
+        // 如果也找不到，返回预设的素数
         return BigInt("1009");
     }
 
@@ -89,12 +136,12 @@ public:
 
     // 显示推荐的安全级别
     static void displaySecurityLevels() {
-        std::cout << "安全级别选项：" << std::endl;
-        std::cout << "0 - 演示级 (p=61, q=53, n=3233)" << std::endl;
-        std::cout << "1 - 低级 (p=1009, q=1013, n=1022117)" << std::endl;
-        std::cout << "2 - 中级 (p=10007, q=10009, n=100160063)" << std::endl;
-        std::cout << "3 - 高级 (p=100003, q=100019, n=10002200057)" << std::endl;
-        std::cout << "4 - 超高级 (p=1000003, q=1000033, n=1000036000099)" << std::endl;
+        std::cout << "安全级别选项（每次随机生成）：" << std::endl;
+        std::cout << "0 - 演示级 (p,q ∈ [50, 100], n ≈ 10,000位)" << std::endl;
+        std::cout << "1 - 低级 (p,q ∈ [900, 1100], n ≈ 1,000,000位)" << std::endl;
+        std::cout << "2 - 中级 (p,q ∈ [9000, 11000], n ≈ 100,000,000位)" << std::endl;
+        std::cout << "3 - 高级 (p,q ∈ [90000, 110000], n ≈ 10,000,000,000位)" << std::endl;
+        std::cout << "4 - 极高级 (p,q ∈ [900000, 1100000], n ≈ 1,000,000,000,000位)" << std::endl;
     }
 
 private:

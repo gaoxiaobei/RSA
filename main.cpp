@@ -52,6 +52,7 @@ void encryptText(const RSA& rsa) {
     
     if (!rsa.hasPublicKey()) {
         std::cout << "? 错误：未加载公钥！" << std::endl;
+        std::cout << "提示：您可以选择菜单选项 6 导入他人公钥" << std::endl;
         return;
     }
     
@@ -105,6 +106,34 @@ void decryptText(const RSA& rsa) {
     }
 }
 
+void importPublicKey(RSA& rsa) {
+    std::cout << "\n=== 导入他人公钥 ===" << std::endl;
+    std::cout << "\n注意：导入他人公钥后，您只能用它来加密消息。" << std::endl;
+    std::cout << "      您需要对方的私钥才能解密（通常您不应拥有对方私钥）。" << std::endl;
+    std::cout << "\n请输入公钥文件名（默认为 public_key.txt）: ";
+    
+    std::string filename;
+    std::getline(std::cin, filename);
+    
+    if (filename.empty()) {
+        filename = "public_key.txt";
+    }
+    
+    if (rsa.loadPublicKey(filename)) {
+        std::cout << "\n? 公钥导入成功！" << std::endl;
+        auto publicKey = rsa.getPublicKey();
+        std::cout << "\n导入的公钥信息：" << std::endl;
+        std::cout << "公钥指数 e = " << publicKey.first << std::endl;
+        std::cout << "模数 n = " << publicKey.second << std::endl;
+        std::cout << "\n现在您可以使用此公钥加密消息了。" << std::endl;
+    } else {
+        std::cout << "\n? 公钥导入失败！请检查文件是否存在且格式正确。" << std::endl;
+        std::cout << "文件格式应为：" << std::endl;
+        std::cout << "  第一行：公钥指数 e" << std::endl;
+        std::cout << "  第二行：模数 n" << std::endl;
+    }
+}
+
 void displayMenu() {
     std::cout << "\n==============================" << std::endl;
     std::cout << "    RSA 文字加解密系统" << std::endl;
@@ -114,9 +143,10 @@ void displayMenu() {
     std::cout << "3. 解密文本" << std::endl;
     std::cout << "4. 查看密钥信息" << std::endl;
     std::cout << "5. 重新加载密钥" << std::endl;
+    std::cout << "6. 导入他人公钥（仅用于加密）" << std::endl;
     std::cout << "0. 退出程序" << std::endl;
     std::cout << "==============================" << std::endl;
-    std::cout << "请选择操作 (0-5): ";
+    std::cout << "请选择操作 (0-6): ";
 }
 
 int main() {
@@ -178,15 +208,15 @@ int main() {
                 break;
                 
             case 2:
-                if (keysLoaded) {
+                if (keysLoaded || rsa.hasPublicKey()) {
                     encryptText(rsa);
                 } else {
-                    std::cout << "\n? 请先生成或加载密钥！" << std::endl;
+                    std::cout << "\n? 请先生成密钥、加载密钥或导入公钥！" << std::endl;
                 }
                 break;
                 
             case 3:
-                if (keysLoaded) {
+                if (keysLoaded || rsa.hasPrivateKey()) {
                     decryptText(rsa);
                 } else {
                     std::cout << "\n? 请先生成或加载密钥！" << std::endl;
@@ -194,7 +224,7 @@ int main() {
                 break;
                 
             case 4:
-                if (keysLoaded) {
+                if (keysLoaded || rsa.hasPublicKey() || rsa.hasPrivateKey()) {
                     std::cout << std::endl;
                     rsa.displayKeys();
                 } else {
@@ -207,8 +237,16 @@ int main() {
                     std::cout << "\n? 密钥重新加载成功！" << std::endl;
                     keysLoaded = true;
                 } else {
-                    std::cout << "\n? 密钥加载失败！请确保密钥文件存在。" << std::endl;
+                    std::cout << "\n? 密钥加载失败！" << std::endl;
+                    std::cout << "可能原因：" << std::endl;
+                    std::cout << "  1. 密钥文件不存在" << std::endl;
+                    std::cout << "  2. 公钥和私钥的模数 n 不匹配（来自不同密钥对）" << std::endl;
+                    std::cout << "\n提示：如果只想导入公钥用于加密，请选择菜单选项 6" << std::endl;
                 }
+                break;
+                
+            case 6:
+                importPublicKey(rsa);
                 break;
                 
             case 0:
